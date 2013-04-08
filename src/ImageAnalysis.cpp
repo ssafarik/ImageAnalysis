@@ -14,6 +14,9 @@ typedef ImageAnalysis::ImageAnalysisConfig Config;
 #define FALSE	0
 #define TRUE	(!FALSE)
 
+#define CfromK(k)	((k)/100.0-273.15)
+
+
 namespace enc = sensor_msgs::image_encodings;
 
 
@@ -94,7 +97,7 @@ void CImageAnalysis::Imagetopic_callback(const sensor_msgs::ImageConstPtr& image
 	cv_bridge::CvImagePtr	cv_ptr;
 	double 					valMin, valMax, valXY;
 	double					valMinScaled, valMaxScaled, valXYscaled;
-	cv::Point				locMin, locMax, locXY;
+	cv::Point				ptMin, ptMax, ptXY;
 	unsigned				minPixel, maxPixel;
 	char 					buff[100];
 	std::string				stLo, stHi, stXY;
@@ -104,7 +107,7 @@ void CImageAnalysis::Imagetopic_callback(const sensor_msgs::ImageConstPtr& image
 
 	try
 	{
-		cv_ptr = cv_bridge::toCvCopy(image, image->encoding);//enc::BGR8);
+		cv_ptr = cv_bridge::toCvCopy(image, image->encoding);
 	}
 	catch (cv_bridge::Exception& e)
 	{
@@ -113,23 +116,23 @@ void CImageAnalysis::Imagetopic_callback(const sensor_msgs::ImageConstPtr& image
 	}
 
 	// Get min,max pixel values.
-	minMaxLoc(cv_ptr->image, &valMin, &valMax, &locMin, &locMax);
+	minMaxLoc(cv_ptr->image, &valMin, &valMax, &ptMin, &ptMax);
 	maxPixel = (1<<(cv_ptr->image.elemSize()*8))-1;
 	minPixel = 0;
 
 	// Get value at (x,y).
-	locXY.x = m_config.x;
-	locXY.y = m_config.y;
+	ptXY.x = m_config.x;
+	ptXY.y = m_config.y;
 	switch(cv_ptr->image.elemSize())
 	{
 	case 1:
-		valXY = cv_ptr->image.at<char>(locXY.y, locXY.x);
+		valXY = cv_ptr->image.at<unsigned char>(ptXY.y, ptXY.x);
 		break;
 	case 2:
-		valXY = cv_ptr->image.at<short>(locXY.y, locXY.x);
+		valXY = cv_ptr->image.at<unsigned short>(ptXY.y, ptXY.x);
 		break;
 	case 4:
-		valXY = cv_ptr->image.at<int>(locXY.y, locXY.x);
+		valXY = cv_ptr->image.at<unsigned int>(ptXY.y, ptXY.x);
 		break;
 	}
 
@@ -137,11 +140,11 @@ void CImageAnalysis::Imagetopic_callback(const sensor_msgs::ImageConstPtr& image
 	// Text for the pixel values.
 	if (m_config.ConvertKtoCforFLIR)
 	{
-		sprintf(buff, "%0.2f", (valMin/100.0-273.15)); // Assumes that pixel values are in units of 10 millikelvin.
+		sprintf(buff, "%0.2f", CfromK(valMin)); // Assumes that pixel values are in units of 10 millikelvin.  FLIR camera feature IRFormat="TemperatureLinear10mK"
 		stLo = buff;
-		sprintf(buff, "%0.2f", (valMax/100.0-273.15));
+		sprintf(buff, "%0.2f", CfromK(valMax));
 		stHi = buff;
-		sprintf(buff, "%0.2f", (valXY/100.0-273.15));
+		sprintf(buff, "%0.2f", CfromK(valXY));
 		stXY = buff;
 	}
 	else
@@ -168,19 +171,19 @@ void CImageAnalysis::Imagetopic_callback(const sensor_msgs::ImageConstPtr& image
 	switch(cv_ptr->image.elemSize())
 	{
 	case 1:
-		valXYscaled = cv_ptr->image.at<char>(locXY.y, locXY.x);
-		valMinScaled = cv_ptr->image.at<char>(locMin.y, locMin.x);
-		valMaxScaled = cv_ptr->image.at<char>(locMax.y, locMax.x);
+		valXYscaled = cv_ptr->image.at<unsigned char>(ptXY.y, ptXY.x);
+		valMinScaled = cv_ptr->image.at<unsigned char>(ptMin.y, ptMin.x);
+		valMaxScaled = cv_ptr->image.at<unsigned char>(ptMax.y, ptMax.x);
 		break;
 	case 2:
-		valXYscaled = cv_ptr->image.at<short>(locXY.y, locXY.x);
-		valMinScaled = cv_ptr->image.at<short>(locMin.y, locMin.x);
-		valMaxScaled = cv_ptr->image.at<short>(locMax.y, locMax.x);
+		valXYscaled = cv_ptr->image.at<unsigned short>(ptXY.y, ptXY.x);
+		valMinScaled = cv_ptr->image.at<unsigned short>(ptMin.y, ptMin.x);
+		valMaxScaled = cv_ptr->image.at<unsigned short>(ptMax.y, ptMax.x);
 		break;
 	case 4:
-		valXYscaled = cv_ptr->image.at<int>(locXY.y, locXY.x);
-		valMinScaled = cv_ptr->image.at<int>(locMin.y, locMin.x);
-		valMaxScaled = cv_ptr->image.at<int>(locMax.y, locMax.x);
+		valXYscaled = cv_ptr->image.at<unsigned int>(ptXY.y, ptXY.x);
+		valMinScaled = cv_ptr->image.at<unsigned int>(ptMin.y, ptMin.x);
+		valMaxScaled = cv_ptr->image.at<unsigned int>(ptMax.y, ptMax.x);
 		break;
 	}
 	colorXY = ((unsigned)valXYscaled>(maxPixel/2)) ? minPixel : maxPixel;
@@ -192,27 +195,27 @@ void CImageAnalysis::Imagetopic_callback(const sensor_msgs::ImageConstPtr& image
 	// Draw text indicating the min,max pixel values.
 	if (m_config.AnnotateMinMax)
 	{
-		locMin.y += 10;
-		locMax.y += 10;
-		putText(cv_ptr->image, stLo, locMin, cv::FONT_HERSHEY_PLAIN, scaleText, cv::Scalar::all(colorMin));
-		putText(cv_ptr->image, stHi, locMax, cv::FONT_HERSHEY_PLAIN, scaleText, cv::Scalar::all(colorMax));
-		locMin.y -= 10;
-		locMax.y -= 10;
+		ptMin.y += 10;
+		ptMax.y += 10;
+		putText(cv_ptr->image, stLo, ptMin, cv::FONT_HERSHEY_PLAIN, scaleText, cv::Scalar::all(colorMin));
+		putText(cv_ptr->image, stHi, ptMax, cv::FONT_HERSHEY_PLAIN, scaleText, cv::Scalar::all(colorMax));
+		ptMin.y -= 10;
+		ptMax.y -= 10;
 
 		// Draw dots on min,max pixels.
 		switch(cv_ptr->image.elemSize())
 		{
 		case 1:
-			cv_ptr->image.at<char>(locMin.y, locMin.x) = colorMin;
-			cv_ptr->image.at<char>(locMax.y, locMax.x) = colorMax;
+			cv_ptr->image.at<unsigned char>(ptMin.y, ptMin.x) = colorMin;
+			cv_ptr->image.at<unsigned char>(ptMax.y, ptMax.x) = colorMax;
 			break;
 		case 2:
-			cv_ptr->image.at<short>(locMin.y, locMin.x) = colorMin;
-			cv_ptr->image.at<short>(locMax.y, locMax.x) = colorMax;
+			cv_ptr->image.at<unsigned short>(ptMin.y, ptMin.x) = colorMin;
+			cv_ptr->image.at<unsigned short>(ptMax.y, ptMax.x) = colorMax;
 			break;
 		case 4:
-			cv_ptr->image.at<int>(locMin.y, locMin.x) = colorMin;
-			cv_ptr->image.at<int>(locMax.y, locMax.x) = colorMax;
+			cv_ptr->image.at<unsigned int>(ptMin.y, ptMin.x) = colorMin;
+			cv_ptr->image.at<unsigned int>(ptMax.y, ptMax.x) = colorMax;
 			break;
 		}
 	}
@@ -220,21 +223,21 @@ void CImageAnalysis::Imagetopic_callback(const sensor_msgs::ImageConstPtr& image
 	// Draw text indicating the pixel value.
 	if (m_config.AnnotateXY)
 	{
-		locXY.y += 10;
-		putText(cv_ptr->image, stXY, locXY, cv::FONT_HERSHEY_PLAIN, scaleText, cv::Scalar::all(colorXY));
-		locXY.y -= 10;
+		ptXY.y += 10;
+		putText(cv_ptr->image, stXY, ptXY, cv::FONT_HERSHEY_PLAIN, scaleText, cv::Scalar::all(colorXY));
+		ptXY.y -= 10;
 
 		// Draw dot on pixel.
 		switch(cv_ptr->image.elemSize())
 		{
 		case 1:
-			cv_ptr->image.at<char>(locXY.y, locXY.x) = colorXY;
+			cv_ptr->image.at<unsigned char>(ptXY.y, ptXY.x) = colorXY;
 			break;
 		case 2:
-			cv_ptr->image.at<short>(locXY.y, locXY.x) = colorXY;
+			cv_ptr->image.at<unsigned short>(ptXY.y, ptXY.x) = colorXY;
 			break;
 		case 4:
-			cv_ptr->image.at<int>(locXY.y, locXY.x) = colorXY;
+			cv_ptr->image.at<unsigned int>(ptXY.y, ptXY.x) = colorXY;
 			break;
 		}
 	}
