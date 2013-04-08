@@ -1,0 +1,23 @@
+<package>
+  <description brief="ImageAnalysis">
+
+     ImageAnalysis
+
+  </description>
+  <author>Steve Safarik</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/ImageAnalysis</url>
+
+  <depend package="roscpp"/>
+  <depend package="sensor_msgs"/>
+  <depend package="std_msgs"/>
+  <depend package="image_transport"/>
+  <depend package="dynamic_reconfigure" />
+  <depend package="driver_base" />
+  <depend package="opencv2"/>
+  <depend package="cv_bridge"/>
+
+</package>
+
+
