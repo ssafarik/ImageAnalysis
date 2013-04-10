@@ -103,6 +103,7 @@ void CImageAnalysis::Imagetopic_callback(const sensor_msgs::ImageConstPtr& image
 	std::string				stLo, stHi, stXY;
 	double					scaleText = 1.0;
 	unsigned				colorMin, colorMax, colorXY;
+	int 					xOffset, yOffset;
 
 
 	try
@@ -195,12 +196,21 @@ void CImageAnalysis::Imagetopic_callback(const sensor_msgs::ImageConstPtr& image
 	// Draw text indicating the min,max pixel values.
 	if (m_config.AnnotateMinMax)
 	{
-		ptMin.y += 10;
-		ptMax.y += 10;
+		xOffset = (ptMin.x>image->width/2) ? -50 : 5;
+		yOffset = (ptMin.y>image->height/2) ? -2 : 12;
+		ptMin.x += xOffset;
+		ptMin.y += yOffset;
 		putText(cv_ptr->image, stLo, ptMin, cv::FONT_HERSHEY_PLAIN, scaleText, cv::Scalar::all(colorMin));
+		ptMin.y -= yOffset;
+		ptMin.x -= xOffset;
+
+		xOffset = (ptMax.x>image->width/2) ? -50 : 5;
+		yOffset = (ptMax.y>image->height/2) ? -2 : 12;
+		ptMax.x += xOffset;
+		ptMax.y += yOffset;
 		putText(cv_ptr->image, stHi, ptMax, cv::FONT_HERSHEY_PLAIN, scaleText, cv::Scalar::all(colorMax));
-		ptMin.y -= 10;
-		ptMax.y -= 10;
+		ptMax.y -= yOffset;
+		ptMax.x -= xOffset;
 
 		// Draw dots on min,max pixels.
 		switch(cv_ptr->image.elemSize())
@@ -223,9 +233,13 @@ void CImageAnalysis::Imagetopic_callback(const sensor_msgs::ImageConstPtr& image
 	// Draw text indicating the pixel value.
 	if (m_config.AnnotateXY)
 	{
-		ptXY.y += 10;
+		xOffset = (ptXY.x>image->width/2) ? -50 : 5;
+		yOffset = (ptXY.y>image->height/2) ? -2 : 12;
+		ptXY.y += yOffset;
+		ptXY.x += xOffset;
 		putText(cv_ptr->image, stXY, ptXY, cv::FONT_HERSHEY_PLAIN, scaleText, cv::Scalar::all(colorXY));
-		ptXY.y -= 10;
+		ptXY.y -= yOffset;
+		ptXY.x -= xOffset;
 
 		// Draw dot on pixel.
 		switch(cv_ptr->image.elemSize())
